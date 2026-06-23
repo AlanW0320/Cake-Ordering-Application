@@ -180,27 +180,5 @@ If you want to reset or recreate the DBs, check SQL scripts in SQLcreate/ and ad
 
 ---
 
-## Development notes & tips
-- The React Native app entry is COS/App.tsx — it wires stack + tab navigation and registers screens.
-- New cakes (catalog) are added via POST /api/newcakes; orders are recorded via POST /api/cakes (cakerecords).
-- Search for "sqlite" in COS/ screens to see where the app uses local SQLite storage.
-
----
-
-## Contributing
-1. Fork the repo
-2. Create a feature branch
-3. Run unit tests and check the app runs on simulator/emulator
-4. Open a pull request describing changes and any required setup
-
-Please add tests for new features where appropriate.
-
----
-
 ## License
 No license file detected. Add a LICENSE (for example MIT) if you want to make this project open source.
-
----
-
-## Contact
-If you have questions or want to collaborate, open an issue or PR in this repository.
