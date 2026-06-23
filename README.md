@@ -1,79 +1,206 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Cake Ordering Application
 
-# Getting Started
+A cross-platform mobile app (React Native + TypeScript) for browsing cakes, placing orders, and managing cake inventory — backed by small Flask API servers (Python + SQLite). Intended as a full-stack demo / small production-ready prototype for a cake ordering system.
 
->**Note**: Make sure you have completed the [React Native - Environment Setup](https://reactnative.dev/docs/environment-setup) instructions till "Creating a new application" step, before proceeding.
+## Key points
+- Mobile app lives in COS/ (TypeScript React Native)
+- Two small Python Flask servers live in SERVERCAKE/ and SERVERUSER/ and use SQLite for persistence
+- Client uses local SQLite on device (react-native-sqlite-storage) and talks to the Flask APIs for server-side data and order records
 
-## Step 1: Start the Metro Server
+---
 
-First, you will need to start **Metro**, the JavaScript _bundler_ that ships _with_ React Native.
+## Stack
+- **Language(s):** TypeScript (app), Python (servers), Kotlin/Objective-C for native mobile bits
+- **Framework / runtime:**
+  - React Native (app) — project uses RN 0.73+ with React 18
+  - Flask (servers) — simple REST API wrappers around SQLite
+- **Notable libraries:**
+  - @react-navigation/* (navigation)
+  - react-native-sqlite-storage (local DB)
+  - react-native-vector-icons (UI icons)
+  - socket.io-client (included for realtime use)
+  - Flask + sqlite3 on the server side
 
-To start Metro, run the following command from the _root_ of your React Native project:
+---
 
+## Repository layout
+Top-level (annotated)
+
+```
+COS/                React Native app (TypeScript). Screens, App.tsx, utilities
+  ├─ App.tsx        App entry (navigation & tabs)
+  ├─ screens/       Screens (Home, Cake, History, Profile, Login/Register, Admin, etc.)
+  ├─ utility.ts     client utilities
+SERVERCAKE/         Python Flask server + SQLite DB for cake catalog & order records
+  ├─ server.py      Flask REST API (cakes, newcakes, cakerecords)
+  ├─ mycakes.sqlite pre-populated SQLite DB used by server.py
+SERVERUSER/         Python server + SQLite for user accounts
+  ├─ serveruser.py  user-management API (users.sqlite included)
+  ├─ users.sqlite   SQLite DB used by serveruser.py
+SQLcreate/          SQL scripts to create DB tables (schema helpers)
+assets/             images and app assets
+android/ ios/       native projects for Android and iOS (React Native)
+__tests__/          Jest tests (project tests)
+package.json        JS dependencies & scripts
+tsconfig.json       TypeScript config
+```
+
+How it fits together:
+- The React Native app (COS/) is the client. It shows cake listings, lets users place orders and view history.
+- The app reads/writes local data via react-native-sqlite-storage and calls the Flask servers (SERVERCAKE and SERVERUSER) for server-side persistence and multi-user functionality.
+- SERVERCAKE exposes REST endpoints to list cakes, add new cakes and save cake order records. SERVERUSER manages user accounts.
+
+---
+
+## How to run the project (short path)
+
+Prerequisites
+- Node 18+ (package.json specifies node >= 18)
+- Yarn or npm
+- React Native environment set up (Android SDK / Xcode as appropriate)
+- Python 3.x (for the Flask servers)
+- CocoaPods for iOS (if running on iOS)
+
+Install JS deps
 ```bash
-# using npm
-npm start
+# from repo root
+npm install
+# or
+yarn
+```
 
-# OR using Yarn
+Start Metro
+```bash
+npm start
+# or
 yarn start
 ```
 
-## Step 2: Start your Application
-
-Let Metro Bundler run in its _own_ terminal. Open a _new_ terminal from the _root_ of your React Native project. Run the following command to start your _Android_ or _iOS_ app:
-
-### For Android
-
+Run on Android
 ```bash
-# using npm
 npm run android
-
-# OR using Yarn
+# or
 yarn android
 ```
 
-### For iOS
-
+Run on iOS
 ```bash
-# using npm
+# macOS, from repo root
+cd ios && pod install && cd ..
 npm run ios
-
-# OR using Yarn
+# or
 yarn ios
 ```
 
-If everything is set up _correctly_, you should see your new app running in your _Android Emulator_ or _iOS Simulator_ shortly provided you have set up your emulator/simulator correctly.
+Run tests
+```bash
+npm test
+```
 
-This is one way to run your app — you can also run it directly from within Android Studio and Xcode respectively.
+---
 
-## Step 3: Modifying your App
+## Running the Flask servers
 
-Now that you have successfully run the app, let's modify it.
+SERVERCAKE: (cake catalog + order records)
+- File: SERVERCAKE/server.py
+- DB: SERVERCAKE/mycakes.sqlite (included)
 
-1. Open `App.tsx` in your text editor of choice and edit some lines.
-2. For **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Developer Menu** (<kbd>Ctrl</kbd> + <kbd>M</kbd> (on Window and Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (on macOS)) to see your changes!
+Quick run
+```bash
+# From repo root
+python3 SERVERCAKE/server.py -p 5001
+```
+The server runs on 0.0.0.0:5001 by default (see server.py args). If you need a different port, pass `-p PORT`.
 
-   For **iOS**: Hit <kbd>Cmd ⌘</kbd> + <kbd>R</kbd> in your iOS Simulator to reload the app and see your changes!
+SERVERUSER: (user management)
+- File: SERVERUSER/serveruser.py
+- DB: SERVERUSER/users.sqlite (included)
 
-## Congratulations! :tada:
+Quick run (check serveruser.py for default port/flags)
+```bash
+python3 SERVERUSER/serveruser.py
+```
 
-You've successfully run and modified your React Native App. :partying_face:
+Dependencies (server-side)
+```bash
+pip install Flask
+# plus any other dependencies imported by serveruser.py (check its header)
+```
 
-### Now what?
+---
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [Introduction to React Native](https://reactnative.dev/docs/getting-started).
+## SERVERCAKE API (as implemented in SERVERCAKE/server.py)
+Note: this is derived directly from the server implementation — use these sample shapes when calling the API.
 
-# Troubleshooting
+- GET /api/cakes
+  - Returns list of cakes (id, name, price, img)
+- GET /api/cakes/:id
+  - Returns single cake by id
+- GET /api/cakerecords
+  - Returns list of order records (id, name, price, img, date)
+- POST /api/cakes
+  - Adds a new order (cakerecord). Expects JSON:
+    ```json
+    { "name": "...", "price": 12.5, "img": "url-or-path", "date": "YYYY-MM-DD" }
+    ```
+  - Returns { id, affected, message } on success (201)
+- POST /api/newcakes
+  - Adds a new cake to the catalog. Expects JSON:
+    ```json
+    { "name": "...", "price": 9.99, "img": "url-or-path" }
+    ```
+  - Returns { id, affected, message } on success (201)
+- PUT /api/cakes/:id
+  - Update a cake entry. Expects JSON with id, name, price, img.
+- DELETE /api/cakes/:id
+  - Delete cake by id (expects JSON payload with matching id field)
+- DELETE /api/cakerecords/:id
+  - Delete an order record by id (expects JSON payload with matching id field)
 
-If you can't get this to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+Server responses include HTTP status codes and JSON error objects on failure. See SERVERCAKE/server.py for exact behavior and debug prints.
 
-# Learn More
+---
 
-To learn more about React Native, take a look at the following resources:
+## Database
+- SERVERCAKE/mycakes.sqlite — catalog + cakerecords
+- SERVERUSER/users.sqlite — user data
+- Local device DBs are handled via react-native-sqlite-storage for offline storage / caching
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+If you want to reset or recreate the DBs, check SQL scripts in SQLcreate/ and adapt as needed. Do not use these included SQLite files for production sensitive data.
+
+---
+
+## Common setup notes / troubleshooting
+- iOS builds require running `pod install` in ios/ after installing JS deps.
+- react-native-sqlite-storage (native module) may require additional native configuration on iOS/Android — follow its README if you see linking errors.
+- If the mobile app cannot reach the Flask server on a device/emulator, ensure:
+  - The server is accessible on the host IP (not just localhost) or use port-forwarding
+  - For Android emulator, use 10.0.2.2:5001 (Android emulator) to reach host's localhost unless using a physical device
+- If Python server errors mention missing modules, install them via pip (Flask is required).
+
+---
+
+## Development notes & tips
+- The React Native app entry is COS/App.tsx — it wires stack + tab navigation and registers screens.
+- New cakes (catalog) are added via POST /api/newcakes; orders are recorded via POST /api/cakes (cakerecords).
+- Search for "sqlite" in COS/ screens to see where the app uses local SQLite storage.
+
+---
+
+## Contributing
+1. Fork the repo
+2. Create a feature branch
+3. Run unit tests and check the app runs on simulator/emulator
+4. Open a pull request describing changes and any required setup
+
+Please add tests for new features where appropriate.
+
+---
+
+## License
+No license file detected. Add a LICENSE (for example MIT) if you want to make this project open source.
+
+---
+
+## Contact
+If you have questions or want to collaborate, open an issue or PR in this repository.
